@@ -4,8 +4,11 @@ duckduckgo_search==7.5.3
 baidusearch==1.0.3
 
 # LLM — use Gemini (free tier) or OpenAI
-google-generativeai==0.8.3
+google-genai==1.16.0
 openai==1.66.3
+
+# Streamlit UI
+streamlit==1.45.1
 
 # Utilities
 python-dotenv==1.0.1
