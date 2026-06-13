@@ -1,0 +1,24 @@
+# Never commit your API keys
+.env
+
+# Output files (optional — remove these lines if you want to commit results)
+Enriched.csv
+Fallback_EmailNeeded.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code / Codespaces
+.vscode/
