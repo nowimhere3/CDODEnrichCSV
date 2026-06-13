@@ -148,12 +148,24 @@ Rules:
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def call_gemini(prompt: str) -> dict:
-    """Call Gemini 1.5 Flash (free tier)"""
-    import google.generativeai as genai
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel(GEMINI_MODEL)
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+    """Call Gemini 1.5 Flash using the new google-genai SDK (free tier)"""
+    try:
+        # Try new SDK first (google-genai >= 0.8)
+        from google import genai
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+        )
+        text = response.text.strip()
+    except (ImportError, AttributeError):
+        # Fallback to older google-generativeai SDK
+        import google.generativeai as genai_old
+        genai_old.configure(api_key=os.environ["GEMINI_API_KEY"])
+        model = genai_old.GenerativeModel(GEMINI_MODEL)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+
     # Strip markdown code fences if present
     text = text.replace("```json", "").replace("```", "").strip()
     return json.loads(text)
@@ -242,16 +254,10 @@ def enrich_csv(input_file: str, batch_size: int = 50, start_row: int = 0):
         print(f"❌ File not found: {input_file}")
         return
 
-    # Read CSV
-    with open(input_path, newline='', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        all_rows = list(reader)
-        original_fields = list(reader.fieldnames or [])
-
     # Re-read to get fieldnames correctly
     with open(input_path, newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
-        original_fields = reader.fieldnames or []
+        original_fields = list(reader.fieldnames or [])
         all_rows = list(reader)
 
     batch = all_rows[start_row : start_row + batch_size]
@@ -259,7 +265,6 @@ def enrich_csv(input_file: str, batch_size: int = 50, start_row: int = 0):
 
     enriched_rows = []
     fallback_rows = []
-    skipped = []
 
     for i, row in enumerate(batch):
         full_name = row.get("Full Name", "").strip()
